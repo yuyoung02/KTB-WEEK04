@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/springbootjpa?serverTimezone=UTC&useSSL=false
+    username: root
+    password: rbdhks!5618
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create   # 개발 중에는 create / create-drop / update 중 선택
+    properties:
+      hibernate:
+        format_sql: true
+  web:
+    error:
+      include-message: always
+
+logging:
+  level:
+    org.hibernate.SQL: debug
