@@ -42,19 +42,19 @@ public class UserController {
 
     //회원 정보 수정 -> 내정보만 수정가능하도록
     @PatchMapping("/{userId}")
-    public UserResponseDto patchUser(@PathVariable Long userId, @RequestBody UserPatchDto request){
+    public UserResponseDto patchUser(@PathVariable Long userId, @Valid @RequestBody UserPatchDto request){
         return userService.patchUser(userId,request);
     }
 
     // 회원 비밀번호 수정
     @PatchMapping("/{userId}/password")
-    public String changePassword(@PathVariable Long userId, @RequestBody PasswordRequestDto passwordRequest){
+    public String changePassword(@PathVariable Long userId, @Valid @RequestBody PasswordRequestDto passwordRequest){
         return userService.changePassword(userId, passwordRequest);
     }
 
     //회원 삭제
     @DeleteMapping("/{userId}")
-    public String deleteUser(@PathVariable Long userId, @RequestBody UserDeleteRequstDto deleteRequst) {
+    public String deleteUser(@PathVariable Long userId, @Valid @RequestBody UserDeleteRequstDto deleteRequst) {
         return userService.deleteUser(userId,deleteRequst);
     }
 

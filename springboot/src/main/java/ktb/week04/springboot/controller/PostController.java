@@ -47,7 +47,7 @@ public class PostController {
 
     //게시글 수정
     @PatchMapping("{postId}")
-    public PostResponseDto patchPost(@PathVariable Long postId, @RequestBody PostPatchDto patchRequest){
+    public PostResponseDto patchPost(@PathVariable Long postId, @Valid @RequestBody PostPatchDto patchRequest){
         return postService.patchPost(postId, patchRequest);
     }
     //게시글 삭제

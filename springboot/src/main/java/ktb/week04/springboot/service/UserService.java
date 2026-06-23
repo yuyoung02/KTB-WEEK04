@@ -1,5 +1,6 @@
 package ktb.week04.springboot.service;
 
+import jakarta.validation.Valid;
 import org.springframework.transaction.annotation.Transactional;
 import ktb.week04.springboot.dto.user.*;
 import ktb.week04.springboot.entity.User;
@@ -152,7 +153,7 @@ public class UserService {
     }
 
     //회원 삭제
-    public String deleteUser(Long userId,UserDeleteRequstDto deleteRequest) {
+    public String deleteUser(Long userId, UserDeleteRequstDto deleteRequest) {
 
         if (!userId.equals(deleteRequest.getRequestUserId())) {
             throw new ResponseStatusException(
