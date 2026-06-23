@@ -1,13 +1,21 @@
 spring:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: true
+
+
   datasource:
-    url: jdbc:mysql://localhost:3306/springbootjpa?serverTimezone=UTC&useSSL=false
-    username: root
-    password: rbdhks!5618
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:h2:file:~/h2db/testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
 
   jpa:
     hibernate:
-      ddl-auto: create   # 개발 중에는 create / create-drop / update 중 선택
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: true
@@ -15,6 +23,12 @@ spring:
     error:
       include-message: always
 
+
+  sql:
+    init:
+      mode: always
+
 logging:
   level:
-    org.hibernate.SQL: debug
+    org.springframework.jdbc.core.JdbcTemplate: DEBUG
+    org.springframework.jdbc.core.StatementCreatorUtils: TRACE

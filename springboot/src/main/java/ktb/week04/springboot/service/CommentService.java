@@ -1,126 +1,149 @@
 package ktb.week04.springboot.service;
 
-import jakarta.validation.Valid;
+import ktb.week04.springboot.dto.comment.CommentPatchDto;
 import ktb.week04.springboot.dto.comment.CommentRequestDto;
 import ktb.week04.springboot.dto.comment.CommentResponseDto;
 import ktb.week04.springboot.entity.Comment;
+import ktb.week04.springboot.entity.Post;
+import ktb.week04.springboot.entity.User;
+import ktb.week04.springboot.repository.CommentRepository;
+import ktb.week04.springboot.repository.PostRepository;
+import ktb.week04.springboot.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+
 
 @Service
+@Transactional
 public class CommentService {
 
-    //댓글 데이터 담을곳..
-    private Long commentId = 1L;
-    private final Map<Long, List<Comment>> comments = new HashMap<>();
+    private final CommentRepository commentRepository;
+    private final PostRepository postRepository;
+    private final UserRepository userRepository;
 
+    public CommentService(CommentRepository commentRepository,
+                          PostRepository postRepository,
+                          UserRepository userRepository) {
+        this.commentRepository = commentRepository;
+        this.postRepository = postRepository;
+        this.userRepository = userRepository;
+    }
 
     //댓글 달기
-    @PostMapping("/{postId}/comments")
-    public CommentResponseDto postComment(@PathVariable Long postId, @Valid @RequestBody CommentRequestDto commentRequest
+    public CommentResponseDto postComment(Long postId, CommentRequestDto commentRequest
     ) {
+        Post post = findPostById(postId);
+
+        User user = findUserById(commentRequest.getUserId());
+
+        Long commentId = commentRepository.countByPost(post) +1;
+
         Comment comment = new Comment(
-                commentId++,
+                post,
+                commentId,
                 commentRequest.getCommentText(),
-                commentRequest.getNickname()
+                user
         );
 
-        List<Comment> commentList =
-                comments.getOrDefault(postId, new ArrayList<>());
+        Comment savedComment = commentRepository.save(comment);
 
-        commentList.add(comment);
+        return new CommentResponseDto(savedComment);
+    }
 
-        comments.put(postId, commentList);
+    //댓글 조회
+    @Transactional(readOnly = true)
+    public List<CommentResponseDto> getComments(Long postId){
+        Post post =findPostById(postId);
+
+        return commentRepository.findByPostAndDeletedAtIsNull(post)
+                .stream()
+                .map(CommentResponseDto::new)
+                .toList();
+    }
+
+    //댓글 수정 -> 내가 쓴것만 수정할 수있게..
+    public CommentResponseDto updateComment(
+            Long postId,
+            Long commentId,
+            Long userId,
+            CommentPatchDto patchRequest
+    ) {
+
+        Post post =findPostById(postId);
+        Comment comment = findCommentByPostAndCommentId(post,commentId);
+
+
+        if (!comment.getUser().getUserId()
+                .equals(userId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Only author can modify comment"
+            );
+        }
+
+
+        if (patchRequest.getCommentText() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Nothing changed"
+            );
+        }
+
+        comment.updateCommentText(patchRequest.getCommentText());
 
         return new CommentResponseDto(comment);
     }
 
-    //댓글 조회
-    @GetMapping("/{postId}/comments")
-    public List<Comment> getComments(@PathVariable Long postId){
-        if(comments.get(postId) == null){
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Post not found"
-            );
-        }
-
-        return comments.get(postId);
-    }
-
-    //댓글 수정 -> 나중에 내가 쓴것만 수정할 수있게..
-    @PatchMapping("/{postId}/comments/{commentId}")
-    public CommentResponseDto updateComment(@PathVariable Long postId, @PathVariable Long commentId, @Valid @RequestBody CommentRequestDto commentRequest
-    ) {
-        List<Comment> commentList = comments.get(postId);
-
-        if (commentList == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Comment not found"
-            );
-        }
-
-        Comment targetComment = null;
-
-        for (Comment comment : commentList) {
-            if (comment.getCommentId().equals(commentId)) {
-                targetComment = comment;
-                break;
-            }
-        }
-
-        if (targetComment == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Comment not found"
-            );
-        }
-
-        targetComment.updateCommentText(commentRequest.getCommentText());
-
-        return new CommentResponseDto(targetComment);
-    }
-
     //댓긋 삭제
-    @DeleteMapping("/{postId}/comments/{commentId}")
-    public String deleteComment(@PathVariable Long postId, @PathVariable Long commentId
+    public String deleteComment(Long postId, Long commentId, Long userId
     ) {
 
-        List<Comment> commentList = comments.get(postId);
+        Post post = findPostById(postId);
+        Comment comment = findCommentByPostAndCommentId(post, commentId);
 
-        if (commentList == null) {
+        if (!comment.getUser().getUserId()
+                .equals(userId)) {
             throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Comment not found"
+                    HttpStatus.FORBIDDEN,
+                    "Only author can delete comment"
             );
         }
 
-        Comment targetComment = null;
-
-        for (Comment comment : commentList) {
-            if (comment.getCommentId().equals(commentId)) {
-                targetComment = comment;
-                break;
-            }
-        }
-
-        if (targetComment == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Comment not found"
-            );
-        }
-
-        commentList.remove(targetComment);
+        comment.delete();
 
         return "Delete Success";
+    }
+
+
+    //not found 메소
+    private Post findPostById(Long postId) {
+        return postRepository.findById(postId)
+                .filter(post -> post.getDeletedAt() == null)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Post not found"
+                ));
+    }
+
+    private User findUserById(Long userId) {
+        return userRepository.findById(userId)
+                .filter(user -> user.getDeletedAt() == null)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "User not found"
+                ));
+    }
+
+    private Comment findCommentByPostAndCommentId(Post post, Long commentId) {
+        return commentRepository.findByPostAndCommentIdAndDeletedAtIsNull(post, commentId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Comment not found"
+                ));
     }
 }

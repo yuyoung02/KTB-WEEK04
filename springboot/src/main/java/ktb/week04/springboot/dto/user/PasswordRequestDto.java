@@ -6,6 +6,9 @@ import lombok.NonNull;
 
 @Getter
 public class PasswordRequestDto {
+
+    private Long requestUserId;
+
     @NotBlank(message = "Original Password is required")
     private String originalPwd;
 

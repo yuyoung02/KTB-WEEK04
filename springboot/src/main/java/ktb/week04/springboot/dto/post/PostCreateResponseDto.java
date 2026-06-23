@@ -10,7 +10,7 @@ public class PostCreateResponseDto {
     private Long postId;
 
     public PostCreateResponseDto(Post post){
-        this.userId = post.getUserId();
+        this.userId = post.getUser().getUserId();
         this.postId = post.getPostId();
 
     }

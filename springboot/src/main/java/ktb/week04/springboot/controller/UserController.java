@@ -29,6 +29,7 @@ public class UserController {
 
     //회원가입
     @PostMapping("/signup")
+    @ResponseStatus(HttpStatus.CREATED)
     public UserResponseDto signup(@Valid @RequestBody SignupRequestDto userRequest){
         return userService.signup(userRequest);
     }

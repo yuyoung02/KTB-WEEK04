@@ -1,91 +1,94 @@
 package ktb.week04.springboot.service;
 
+import ktb.week04.springboot.entity.PostLike;
+import org.springframework.transaction.annotation.Transactional;
 import jakarta.validation.Valid;
 import ktb.week04.springboot.dto.post.*;
 import ktb.week04.springboot.entity.Comment;
 import ktb.week04.springboot.entity.Post;
+import ktb.week04.springboot.entity.User;
+import ktb.week04.springboot.repository.PostLikeRepository;
+import ktb.week04.springboot.repository.PostRepository;
+import ktb.week04.springboot.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
+@Transactional
 public class PostService {
-    // 게시글 데이터 담을곳.. (디비 나오면 다 없애야하는 인스턴스 변수들)
-    private final Map<Long, Post> posts = new HashMap<>();
-    private Long postId = 1L;
+
+    private final PostRepository postRepository;
+    private final UserRepository userRepository;
+    private final PostLikeRepository postLikeRepository;
+
+    public PostService(PostRepository postRepository,
+                       UserRepository userRepository,
+                       PostLikeRepository postLikeRepository) {
+        this.postRepository = postRepository;
+        this.userRepository = userRepository;
+        this.postLikeRepository = postLikeRepository;
+    }
 
     //게시글 작성
-    public PostCreateResponseDto createPost(@Valid @RequestBody PostRequestDto postRequest){
+    public PostCreateResponseDto createPost(PostRequestDto postRequest){
 
-        String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일 HH시 mm분 ss초"));
+        User user = findUserById(postRequest.getUserId());
 
         Post post = new Post(
-                postRequest.getUserId(),
-                postId,
+                user,
                 postRequest.getSubject(),
                 postRequest.getImage(),
-                postRequest.getText(),
-                0L,
-                0L,
-                dateTime
+                postRequest.getText()
         );
 
-        posts.put(postId,post);
-
-        postId ++;
+        Post savedPost = postRepository.save(post);
 
         return new PostCreateResponseDto(post);
 
     }
 
     //게시글 목록 조회
-    public List<PostListResponseDto> getPost(){
-        List<PostListResponseDto> postList = new ArrayList<>();
+    @Transactional(readOnly = true)
+    public List<PostListResponseDto> getPost() {
+        List<Post> posts = postRepository.findByDeletedAtIsNull();
 
-        if(posts.isEmpty()){
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Post not found"
-            );
-        }
-
-        for (Post post : posts.values()) {
-            postList.add(new PostListResponseDto(post));
-        }
-
-        return postList;
+        return posts.stream().map(post -> {
+                    Long likeCount = postLikeRepository.countByPost(post);
+                    return new PostListResponseDto(post, likeCount);
+                })
+                .toList();
     }
 
     //게시글 상세 조회
-    public PostResponseDto getPost(@PathVariable Long postId){
-        Post post = posts.get(postId);
+    public PostResponseDto getPost(Long postId){
+        Post post = findPostById(postId);
 
-
-        if (post == null){
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Post not found"
-            );
-        }
-
-        //조회수 ++
+        // 상세 조회하면 -> 조회수 ++
         post.increaseView();
 
-        return new PostResponseDto(post);
+        //좋아요수 따로
+        Long likeCnt = postLikeRepository.countByPost(post);
+
+        return new PostResponseDto(post, likeCnt);
     }
 
     //게시글 수정
-    public PostResponseDto patchPost(@PathVariable Long postId, @RequestBody PostPatchDto patchRequest){
+    public PostResponseDto patchPost(Long postId, PostPatchDto patchRequest){
 
-        Post post = posts.get(postId);
+        Post post = findPostById(postId);
+
+        //내가 쓴것만 수정 가능
+        if (!post.getUser().getUserId().equals(patchRequest.getRequestUserId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Only author can modify post"
+            );
+        }
+
         if(patchRequest.getPatchImage()!=null){
             post.changeImage(patchRequest.getPatchImage());
         }
@@ -101,51 +104,81 @@ public class PostService {
             );
         }
 
-        return new PostResponseDto(post);
+        Long likeCnt = postLikeRepository.countByPost(post);
+
+        return new PostResponseDto(post, likeCnt);
 
     }
     //게시글 삭제
-    public String deletePost(@PathVariable Long postId) {
-        Post post = posts.get(postId);
+    public String deletePost(Long postId, Long userId) {
+        Post post = findPostById(postId);
 
-        if (post == null){
+        //내가 쓴것만 삭제 가눙
+        if (!post.getUser().getUserId().equals(userId)) {
             throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Post not found"
+                    HttpStatus.FORBIDDEN,
+                    "Only author can delete post"
             );
         }
 
-        posts.remove(postId);
+        post.delete();
 
         return "Delete Success";
     }
 
     // 좋아요 +1 -> 디비 구성 후 한 사람이 하나 누르게 수정
-    public Long increaseLike(@PathVariable Long postId){
-        Post post = posts.get(postId);
+    public void increaseLike(Long postId, Long userId){
+        Post post = findPostById(postId);
 
-        if (post == null){
+        User user =findUserById(userId);
+
+        if (postLikeRepository.existsByUserAndPost(user, post)){
             throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Post not found"
+                    HttpStatus.CONFLICT,
+                    "Already liked"
             );
         }
 
-        return post.increaseLike();
+        // 종ㅎ아요 저장
+        PostLike postLike = new PostLike(user, post);
+        postLikeRepository.save(postLike);
     }
 
     //좋아요 취소
-    public Long decreaseLike(@PathVariable Long postId){
-        Post post = posts.get(postId);
+    public void decreaseLike(Long postId, Long userId){
+        Post post = findPostById(postId);
 
-        if (post == null){
+        User user = findUserById(userId);
+
+        if (!postLikeRepository.existsByUserAndPost(user, post)) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
-                    "Post not found"
+                    "Like not found"
             );
         }
 
-        return post.decreaseLike();
+        postLikeRepository.deleteByUserAndPost(user, post);
 
+    }
+
+
+
+    //Not found 메소드
+    private Post findPostById(Long postId) {
+        return postRepository.findById(postId)
+                .filter(post -> post.getDeletedAt() == null)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Post not found"
+                ));
+    }
+
+    private User findUserById(Long userId) {
+        return userRepository.findById(userId)
+                .filter(user -> user.getDeletedAt() == null)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "User not found"
+                ));
     }
 }

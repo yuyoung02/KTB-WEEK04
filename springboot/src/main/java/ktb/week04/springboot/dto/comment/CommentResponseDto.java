@@ -8,12 +8,12 @@ public class CommentResponseDto {
 
     private Long commentId;
     private String commentText;
-    private String nickname;
+    private Long userId;
 
     public CommentResponseDto(Comment comment){
 
         this.commentId = comment.getCommentId();
         this.commentText = comment.getCommentText();
-        this.nickname = comment.getNickname();
+        this.userId = comment.getUser().getUserId();
     }
 }

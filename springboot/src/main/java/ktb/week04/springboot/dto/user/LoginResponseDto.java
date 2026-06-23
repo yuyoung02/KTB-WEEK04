@@ -5,10 +5,10 @@ import lombok.Getter;
 
 @Getter
 public class LoginResponseDto {
-    private Long id;
+    private Long userId;
 
     public LoginResponseDto(User user){
-        this.id = user.getId();
+        this.userId = user.getUserId();
         //토큰
     }
 }
