@@ -74,6 +74,10 @@ public class Post {
         this.image = changedImage;
     }
 
+    public void changeSubject(String changedSubject){
+        this.subject = changedSubject;
+    }
+
     public void increaseView() {
         this.viewNum++;
     }

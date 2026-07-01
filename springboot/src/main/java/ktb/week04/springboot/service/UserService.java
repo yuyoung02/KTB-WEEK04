@@ -1,6 +1,10 @@
 package ktb.week04.springboot.service;
 
 import jakarta.validation.Valid;
+import ktb.week04.springboot.entity.Comment;
+import ktb.week04.springboot.entity.Post;
+import ktb.week04.springboot.repository.CommentRepository;
+import ktb.week04.springboot.repository.PostRepository;
 import org.springframework.transaction.annotation.Transactional;
 import ktb.week04.springboot.dto.user.*;
 import ktb.week04.springboot.entity.User;
@@ -11,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -20,8 +25,14 @@ public class UserService {
 
     private final UserRepository userRepository;
 
-    public UserService(UserRepository userRepository) {
+    private final PostRepository postRepository;
+    private final CommentRepository commentRepository;
+
+    public UserService(UserRepository userRepository, PostRepository postRepository,
+                       CommentRepository commentRepository) {
         this.userRepository = userRepository;
+        this.postRepository = postRepository;
+        this.commentRepository = commentRepository;
     }
 
     //로그인
@@ -99,8 +110,12 @@ public class UserService {
 
 
         if (request.getNickname() != null) {
-            if (userRepository.existsByNickname(request.getNickname())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Nickname already exists");
+            // 기존 닉네임과 같으면 중복 검사 제외
+            String newNickname = request.getNickname();
+            if(!user.getNickname().equals(newNickname)) {
+                if (userRepository.existsByNickname(request.getNickname())) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Nickname already exists");
+                }
             }
             user.changeNickname(request.getNickname());
         }
@@ -171,6 +186,16 @@ public class UserService {
                     HttpStatus.UNAUTHORIZED,
                     "Password is Wrong"
             );
+        }
+
+        List<Post> posts = postRepository.findByUserAndDeletedAtIsNull(user);
+        for (Post post : posts) {
+            post.delete();
+        }
+
+        List<Comment> comments = commentRepository.findByUserAndDeletedAtIsNull(user);
+        for (Comment comment : comments) {
+            comment.delete();
         }
 
         user.delete();

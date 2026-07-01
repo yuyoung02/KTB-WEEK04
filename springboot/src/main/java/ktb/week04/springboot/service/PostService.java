@@ -89,6 +89,10 @@ public class PostService {
             );
         }
 
+        if (patchRequest.getPatchSubject() != null) {
+            post.changeSubject(patchRequest.getPatchSubject());
+        }
+
         if(patchRequest.getPatchImage()!=null){
             post.changeImage(patchRequest.getPatchImage());
         }
@@ -97,7 +101,7 @@ public class PostService {
             post.changeText(patchRequest.getPatchText());
         }
 
-        if(patchRequest.getPatchText() == null && patchRequest.getPatchImage() == null){
+        if(patchRequest.getPatchSubject() == null && patchRequest.getPatchText() == null && patchRequest.getPatchImage() == null){
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Nothing changed"
@@ -124,6 +128,15 @@ public class PostService {
         post.delete();
 
         return "Delete Success";
+    }
+
+
+    @Transactional(readOnly = true)
+    public boolean isLiked(Long postId, Long userId) {
+        Post post = findPostById(postId);
+        User user = findUserById(userId);
+
+        return postLikeRepository.existsByUserAndPost(user, post);
     }
 
     // 좋아요 +1 -> 디비 구성 후 한 사람이 하나 누르게 수정

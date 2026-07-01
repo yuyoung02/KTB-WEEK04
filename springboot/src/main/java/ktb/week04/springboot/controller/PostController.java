@@ -56,6 +56,14 @@ public class PostController {
         return postService.deletePost(postId, userId);
     }
 
+    @GetMapping("/{postId}/likes")
+    public boolean checkLike(
+            @PathVariable Long postId,
+            @RequestParam Long userId
+    ) {
+        return postService.isLiked(postId, userId);
+    }
+
     // 좋아요 +1 -> 디비 구성 후 한 사람이 하나 누르게 수정
     @PostMapping("/{postId}/likes")
     @ResponseStatus(HttpStatus.NO_CONTENT)
