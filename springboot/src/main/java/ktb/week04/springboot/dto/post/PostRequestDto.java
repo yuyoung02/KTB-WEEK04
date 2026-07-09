@@ -6,8 +6,6 @@ import lombok.Getter;
 
 @Getter
 public class PostRequestDto {
-    @NotNull(message = "User ID is required")
-    private Long userId;
 
     @NotBlank(message = "Subject is required")
     private String subject;

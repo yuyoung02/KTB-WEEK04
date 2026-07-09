@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 public class PostResponseDto {
 
     private Long userId;
+    private String nickname;
     private Long postId;
     private String subject;
     private String image;
@@ -21,6 +22,7 @@ public class PostResponseDto {
 
     public PostResponseDto(Post post, Long likeCount){
         this.userId = post.getUser().getUserId();
+        this.nickname = post.getUser().getNickname();
         this.postId = post.getPostId();
         this.subject = post.getSubject();
         this.image = post.getImage();

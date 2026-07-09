@@ -8,7 +8,4 @@ import lombok.Getter;
 public class CommentRequestDto {
     @NotBlank(message = "Text is required")
     private String commentText;
-
-    @NotNull(message = "User ID is required")
-    private Long userId;
 }

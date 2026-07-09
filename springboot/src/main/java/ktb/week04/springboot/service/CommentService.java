@@ -35,11 +35,11 @@ public class CommentService {
     }
 
     //댓글 달기
-    public CommentResponseDto postComment(Long postId, CommentRequestDto commentRequest
+    public CommentResponseDto postComment(Long postId, CommentRequestDto commentRequest, Long currentUserId
     ) {
         Post post = findPostById(postId);
 
-        User user = findUserById(commentRequest.getUserId());
+        User user = findUserById(currentUserId);
 
         Long commentId = commentRepository.countByPost(post) +1;
 
@@ -70,7 +70,7 @@ public class CommentService {
     public CommentResponseDto updateComment(
             Long postId,
             Long commentId,
-            Long userId,
+            Long currentUserId,
             CommentPatchDto patchRequest
     ) {
 
@@ -78,8 +78,7 @@ public class CommentService {
         Comment comment = findCommentByPostAndCommentId(post,commentId);
 
 
-        if (!comment.getUser().getUserId()
-                .equals(userId)) {
+        if (!comment.getUser().getUserId().equals(currentUserId)) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "Only author can modify comment"
@@ -100,14 +99,14 @@ public class CommentService {
     }
 
     //댓긋 삭제
-    public String deleteComment(Long postId, Long commentId, Long userId
+    public String deleteComment(Long postId, Long commentId, Long currentUserId
     ) {
 
         Post post = findPostById(postId);
         Comment comment = findCommentByPostAndCommentId(post, commentId);
 
         if (!comment.getUser().getUserId()
-                .equals(userId)) {
+                .equals(currentUserId)) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "Only author can delete comment"

@@ -1,5 +1,6 @@
 package ktb.week04.springboot.entity;
 
+import ktb.week04.springboot.entity.Enum.Role;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,6 +31,10 @@ public class User {
     @Column(length = 255)
     private String image;
 
+    // 권한 필드 추가
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -43,6 +48,7 @@ public class User {
         this.password = password;
         this.nickname = nickname;
         this.image = image;
+        this.role = Role.USER;
     }
 
     @PrePersist

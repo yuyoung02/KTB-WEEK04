@@ -1,9 +1,11 @@
 package ktb.week04.springboot.dto.user;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import jakarta.validation.constraints.NotBlank;
 
 @Getter
+@AllArgsConstructor
 public class SignupRequestDto {
 
     @NotBlank(message = "Email is required")

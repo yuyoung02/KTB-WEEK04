@@ -2,9 +2,12 @@ package ktb.week04.springboot.service;
 
 import jakarta.validation.Valid;
 import ktb.week04.springboot.entity.Comment;
+import ktb.week04.springboot.entity.Enum.Role;
 import ktb.week04.springboot.entity.Post;
 import ktb.week04.springboot.repository.CommentRepository;
 import ktb.week04.springboot.repository.PostRepository;
+import ktb.week04.springboot.security.JwtTokenProvider;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import ktb.week04.springboot.dto.user.*;
 import ktb.week04.springboot.entity.User;
@@ -23,16 +26,24 @@ import java.util.Map;
 public class UserService {
 
 
+    // 레포
     private final UserRepository userRepository;
-
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
 
+    // 비밀번호 해시 처리
+    private final PasswordEncoder passwordEncoder;
+
+    //jwt
+    private final JwtTokenProvider jwtTokenProvider;
+
     public UserService(UserRepository userRepository, PostRepository postRepository,
-                       CommentRepository commentRepository) {
+                       CommentRepository commentRepository, PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider) {
         this.userRepository = userRepository;
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     //로그인
@@ -45,15 +56,22 @@ public class UserService {
                         "email or password invalid"
                 ));
 
-        // 비밀번호 틀림
-        if (!loginUser.getPassword().equals(loginRequest.getPassword())) {
+        // 비밀번호 틀림 (비밀번호 해시 추가)
+        if (!passwordEncoder.matches(loginRequest.getPassword(), loginUser.getPassword())) {
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
                     "email or password invalid"
             );
         }
 
-        return new LoginResponseDto(loginUser);
+        //jwt
+        String accessToken = jwtTokenProvider.createToken(
+                loginUser.getUserId(),
+                loginUser.getEmail(),
+                loginUser.getRole()
+        );
+
+        return new LoginResponseDto(loginUser, accessToken);
     }
 
     //회원가입
@@ -74,9 +92,12 @@ public class UserService {
             );
         }
 
+        // 비밀번호 해시 추가
+        String encodedPwd = passwordEncoder.encode(userRequest.getPassword());
+
         User user = new User(
                 userRequest.getEmail(),
-                userRequest.getPassword(),
+                encodedPwd,
                 userRequest.getNickname(),
                 userRequest.getImage()
         );
@@ -88,24 +109,22 @@ public class UserService {
 
     //회원 정보 조회
     @Transactional(readOnly = true)
-    public UserResponseDto getUser(Long userId){
+    public UserResponseDto getUser(Long currentUserId){
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-
+        User user = userRepository.findById(currentUserId)
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "User not found"
+                        )
+                );
         return new UserResponseDto(user);
     }
 
     //회원 정보 수정
-    public UserResponseDto patchUser(Long userId, UserPatchDto request){
-        if (!userId.equals(request.getRequestUserId())) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "Only owner can modify user"
-            );
-        }
+    public UserResponseDto patchUser(UserPatchDto request, Long currentUserId){
 
-        User user = userRepository.findById(userId)
+        User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
 
@@ -136,19 +155,12 @@ public class UserService {
 
 
     //회원 비밀번호 수정 -> 비밀번호 재확인 로직
-    public String changePassword(Long userId,PasswordRequestDto passwordRequest){
+    public String changePassword(PasswordRequestDto passwordRequest, Long currentUserId){
 
-        if (!userId.equals(passwordRequest.getRequestUserId())) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "Only owner can change password"
-            );
-        }
-
-        User user = userRepository.findById(userId)
+        User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        if (!user.getPassword().equals(passwordRequest.getOriginalPwd())){
+        if (!passwordEncoder.matches(passwordRequest.getOriginalPwd(), user.getPassword())){
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
                     "Password is wrong"
@@ -162,26 +174,20 @@ public class UserService {
             );
         }
 
-        user.changePwd(passwordRequest.getNewPwd());
+        String encodedNewPwd = passwordEncoder.encode(passwordRequest.getNewPwd());
+        user.changePwd(encodedNewPwd);
 
         return "Password Changed successfully";
     }
 
     //회원 삭제
-    public String deleteUser(Long userId, UserDeleteRequstDto deleteRequest) {
+    public String deleteUser(UserDeleteRequstDto deleteRequest, Long currentUserId) {
 
-        if (!userId.equals(deleteRequest.getRequestUserId())) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "Only owner can delete user"
-            );
-        }
-
-        User user = userRepository.findById(userId)
+        User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
 
-        if(!user.getPassword().equals(deleteRequest.getPassword())){
+        if(!passwordEncoder.matches(deleteRequest.getPassword(), user.getPassword())){
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
                     "Password is Wrong"

@@ -34,9 +34,9 @@ public class PostService {
     }
 
     //게시글 작성
-    public PostCreateResponseDto createPost(PostRequestDto postRequest){
+    public PostCreateResponseDto createPost(PostRequestDto postRequest, Long currentUserId){
 
-        User user = findUserById(postRequest.getUserId());
+        User user = findUserById(currentUserId);
 
         Post post = new Post(
                 user,
@@ -77,12 +77,12 @@ public class PostService {
     }
 
     //게시글 수정
-    public PostResponseDto patchPost(Long postId, PostPatchDto patchRequest){
+    public PostResponseDto patchPost(Long postId, PostPatchDto patchRequest, Long currentUserId){
 
         Post post = findPostById(postId);
 
         //내가 쓴것만 수정 가능
-        if (!post.getUser().getUserId().equals(patchRequest.getRequestUserId())) {
+        if (!post.getUser().getUserId().equals(currentUserId)) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "Only author can modify post"

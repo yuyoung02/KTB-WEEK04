@@ -10,6 +10,8 @@ import java.time.LocalDateTime;
 public class PostListResponseDto {
 
     private Long userId;
+    private String userNickname;
+    private String image;
     private Long postId;
     private String subject;
     private Long likeCount;
@@ -18,6 +20,8 @@ public class PostListResponseDto {
 
     public PostListResponseDto(Post post, Long likeCount){
         this.userId = post.getUser().getUserId();
+        this.userNickname = post.getUser().getNickname();
+        this.image = post.getUser().getImage();
         this.postId = post.getPostId();
         this.subject = post.getSubject();
         this.likeCount = likeCount;

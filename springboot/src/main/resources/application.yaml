@@ -29,6 +29,10 @@ spring:
     init:
       mode: always
 
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 3600000
+
 logging:
   level:
     org.springframework.jdbc.core.JdbcTemplate: DEBUG

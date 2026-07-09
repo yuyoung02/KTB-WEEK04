@@ -1,14 +1,13 @@
 package ktb.week04.springboot.dto.user;
 
 import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 
 @Getter
+@AllArgsConstructor
 public class PasswordRequestDto {
-
-    private Long requestUserId;
-
     @NotBlank(message = "Original Password is required")
     private String originalPwd;
 
