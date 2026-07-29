@@ -1,5 +1,6 @@
 package ktb.week04.springboot.repository;
 
+import ktb.week04.springboot.entity.Enum.StadiumCode;
 import ktb.week04.springboot.entity.Post;
 import ktb.week04.springboot.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,4 +14,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // 삭제된 유저의 게시글 지우기 위해
     List<Post> findByUserAndDeletedAtIsNull(User user);
+
+    List<Post> findByStadiumCodeAndDeletedAtIsNullOrderByCreatedAtDesc(
+            StadiumCode stadiumCode
+    );
 }

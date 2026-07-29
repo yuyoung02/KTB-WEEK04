@@ -6,6 +6,7 @@ import ktb.week04.springboot.dto.comment.CommentRequestDto;
 import ktb.week04.springboot.dto.comment.CommentResponseDto;
 import ktb.week04.springboot.dto.post.*;
 
+import ktb.week04.springboot.entity.Enum.StadiumCode;
 import ktb.week04.springboot.security.CustomUserDetails;
 import ktb.week04.springboot.service.CommentService;
 import ktb.week04.springboot.service.PostService;
@@ -38,10 +39,14 @@ public class PostController {
         return postService.createPost(postRequest, userDetails.getUserId());
     }
 
-    //게시글 목록 조회
+    //게시글 목록 조회 -> 구단 필터링 추가
     @GetMapping()
-    public List<PostListResponseDto> getPost(){
-        return postService.getPost();
+    public List<PostListResponseDto> getPost(@RequestParam(required = false) StadiumCode stadiumId){
+        if (stadiumId == null) {
+            return postService.getPost();
+        }
+
+        return postService.getPostsByStadium(stadiumId);
     }
 
     //게시글 상세 조회
@@ -130,7 +135,6 @@ public class PostController {
 
         return commentService.deleteComment(postId, commentId, userDetails.getUserId());
     }
-
 }
 
 

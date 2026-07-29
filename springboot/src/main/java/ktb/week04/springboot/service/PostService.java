@@ -1,5 +1,6 @@
 package ktb.week04.springboot.service;
 
+import ktb.week04.springboot.entity.Enum.StadiumCode;
 import ktb.week04.springboot.entity.PostLike;
 import org.springframework.transaction.annotation.Transactional;
 import jakarta.validation.Valid;
@@ -9,6 +10,7 @@ import ktb.week04.springboot.entity.Post;
 import ktb.week04.springboot.entity.User;
 import ktb.week04.springboot.repository.PostLikeRepository;
 import ktb.week04.springboot.repository.PostRepository;
+import ktb.week04.springboot.repository.CommentRepository;
 import ktb.week04.springboot.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -24,13 +26,16 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final PostLikeRepository postLikeRepository;
+    private final CommentRepository commentRepository;
 
     public PostService(PostRepository postRepository,
                        UserRepository userRepository,
-                       PostLikeRepository postLikeRepository) {
+                       PostLikeRepository postLikeRepository,
+                       CommentRepository commentRepository) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.postLikeRepository = postLikeRepository;
+        this.commentRepository = commentRepository;
     }
 
     //게시글 작성
@@ -40,6 +45,7 @@ public class PostService {
 
         Post post = new Post(
                 user,
+                postRequest.getStadiumId(),
                 postRequest.getSubject(),
                 postRequest.getImage(),
                 postRequest.getText()
@@ -58,7 +64,28 @@ public class PostService {
 
         return posts.stream().map(post -> {
                     Long likeCount = postLikeRepository.countByPost(post);
-                    return new PostListResponseDto(post, likeCount);
+                    Long commentCount = commentRepository.countByPostAndDeletedAtIsNull(post);
+                    return new PostListResponseDto(post, likeCount, commentCount);
+                })
+                .toList();
+    }
+
+    //구장별 조회 메소드
+    @Transactional(readOnly = true)
+    public List<PostListResponseDto> getPostsByStadium(
+            StadiumCode stadiumCode
+    ) {
+        List<Post> posts =
+                postRepository
+                        .findByStadiumCodeAndDeletedAtIsNullOrderByCreatedAtDesc(
+                                stadiumCode
+                        );
+
+        return posts.stream()
+                .map(post -> {
+                    Long likeCount = postLikeRepository.countByPost(post);
+                    Long commentCount = commentRepository.countByPostAndDeletedAtIsNull(post);
+                    return new PostListResponseDto(post, likeCount, commentCount);
                 })
                 .toList();
     }
@@ -101,7 +128,14 @@ public class PostService {
             post.changeText(patchRequest.getPatchText());
         }
 
-        if(patchRequest.getPatchSubject() == null && patchRequest.getPatchText() == null && patchRequest.getPatchImage() == null){
+        if (patchRequest.getPatchStadiumId() != null) {
+            post.changeStadiumCode(
+                    patchRequest.getPatchStadiumId()
+            );
+        }
+
+        if(patchRequest.getPatchSubject() == null && patchRequest.getPatchText() == null && patchRequest.getPatchImage() == null &&
+                patchRequest.getPatchStadiumId() == null){
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Nothing changed"

@@ -1,5 +1,6 @@
 package ktb.week04.springboot.entity;
 
+import ktb.week04.springboot.entity.Enum.StadiumCode;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,6 +23,10 @@ public class Post {
     @JoinColumn(name = "userId", nullable = false)
     private User user;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "stadium_code", nullable = false, length = 30)
+    private StadiumCode stadiumCode;
+
     @Column(nullable = false, length = 100)
     private String subject;
 
@@ -43,8 +48,9 @@ public class Post {
     private LocalDateTime deletedAt;
 
 
-    public Post(User user, String subject, String image, String text) {
+    public Post(User user, StadiumCode stadiumCode, String subject, String image, String text) {
         this.user = user;
+        this.stadiumCode = stadiumCode;
         this.subject = subject;
         this.image = image;
         this.text = text;
@@ -64,6 +70,10 @@ public class Post {
 
     public void delete(){
         this.deletedAt = LocalDateTime.now();
+    }
+
+    public void changeStadiumCode(StadiumCode stadiumCode) {
+        this.stadiumCode = stadiumCode;
     }
 
     public void changeText(String changedText){

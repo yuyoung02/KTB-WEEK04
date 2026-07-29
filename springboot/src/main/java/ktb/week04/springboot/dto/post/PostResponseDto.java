@@ -1,6 +1,7 @@
 package ktb.week04.springboot.dto.post;
 
 
+import ktb.week04.springboot.entity.Enum.StadiumCode;
 import ktb.week04.springboot.entity.Post;
 import lombok.Getter;
 
@@ -13,6 +14,7 @@ public class PostResponseDto {
     private Long userId;
     private String nickname;
     private Long postId;
+    private StadiumCode stadiumId;
     private String subject;
     private String image;
     private String text;
@@ -24,6 +26,7 @@ public class PostResponseDto {
         this.userId = post.getUser().getUserId();
         this.nickname = post.getUser().getNickname();
         this.postId = post.getPostId();
+        this.stadiumId = post.getStadiumCode();
         this.subject = post.getSubject();
         this.image = post.getImage();
         this.text = post.getText();
