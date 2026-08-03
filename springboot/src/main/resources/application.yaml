@@ -2,6 +2,9 @@ spring:
   profiles:
     default: local
 
+  jackson:
+    time-zone: UTC
+
   web:
     error:
       include-message: always
