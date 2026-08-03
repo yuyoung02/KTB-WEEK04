@@ -8,6 +8,7 @@ import ktb.week04.springboot.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.multipart.MultipartFile;
 
 
 @RestController
@@ -29,8 +30,9 @@ public class UserController {
     //회원가입
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
-    public UserResponseDto signup(@Valid @RequestBody SignupRequestDto userRequest){
-        return userService.signup(userRequest);
+    public UserResponseDto signup(@RequestPart("user") @Valid SignupRequestDto userRequest,
+                                  @RequestPart(value = "image", required = false) MultipartFile image){
+        return userService.signup(userRequest, image);
     }
 
     //회원 정보 조회 -> 나만의 것 조회 가능하도
@@ -47,10 +49,11 @@ public class UserController {
 
     //회원 정보 수정 -> 내정보만 수정가능하도록
     @PatchMapping("/me")
-    public UserResponseDto patchUser(@Valid @RequestBody UserPatchDto request, Authentication authentication){
-
+    public UserResponseDto patchUser(@RequestPart("user") @Valid UserPatchDto request,
+                                     @RequestPart(value = "image", required = false) MultipartFile image,
+                                     Authentication authentication){
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        return userService.patchUser(request, userDetails.getUserId());
+        return userService.patchUser(request, image, userDetails.getUserId());
     }
 
     // 회원 비밀번호 수정

@@ -14,7 +14,10 @@ import ktb.week04.springboot.entity.User;
 import ktb.week04.springboot.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
@@ -37,13 +40,18 @@ public class UserService {
     //jwt
     private final JwtTokenProvider jwtTokenProvider;
 
+    // 이미지처리
+    private final S3Service s3Service;
+
     public UserService(UserRepository userRepository, PostRepository postRepository,
-                       CommentRepository commentRepository, PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider) {
+                       CommentRepository commentRepository, PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider,
+                       S3Service s3Service) {
         this.userRepository = userRepository;
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.s3Service = s3Service;
     }
 
     //로그인
@@ -75,7 +83,8 @@ public class UserService {
     }
 
     //회원가입
-    public UserResponseDto signup(SignupRequestDto userRequest){
+    public UserResponseDto signup(SignupRequestDto userRequest,
+                                  MultipartFile image){
 
         // 이메일 중복 검사
         if (userRepository.existsByEmail(userRequest.getEmail())) {
@@ -95,11 +104,18 @@ public class UserService {
         // 비밀번호 해시 추가
         String encodedPwd = passwordEncoder.encode(userRequest.getPassword());
 
+        // 프로필 이미지가 있으면 profiles 경로에 업로드한다.
+        String imageUrl = null;
+
+        if (image != null && !image.isEmpty()) {
+            imageUrl = s3Service.upload(image, "profiles");
+        }
+
         User user = new User(
                 userRequest.getEmail(),
                 encodedPwd,
                 userRequest.getNickname(),
-                userRequest.getImage()
+                imageUrl
         );
 
         User savedUser = userRepository.save(user);
@@ -122,32 +138,50 @@ public class UserService {
     }
 
     //회원 정보 수정
-    public UserResponseDto patchUser(UserPatchDto request, Long currentUserId){
+    public UserResponseDto patchUser(UserPatchDto request,
+                                     MultipartFile image, Long currentUserId){
 
         User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
 
-        if (request.getNickname() != null) {
-            // 기존 닉네임과 같으면 중복 검사 제외
-            String newNickname = request.getNickname();
-            if(!user.getNickname().equals(newNickname)) {
-                if (userRepository.existsByNickname(request.getNickname())) {
-                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Nickname already exists");
-                }
-            }
-            user.changeNickname(request.getNickname());
-        }
+        boolean hasImage = image != null && !image.isEmpty();
 
-        if (request.getImage() != null) {
-            user.changeImage(request.getImage());
-        }
-
-        if (request.getImage() == null && request.getNickname() ==null){
+        // 닉네임도 없고 새 이미지도 없으면 변경할 내용이 없다.
+        if (request.getNickname() == null && !hasImage) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Nothing changed"
             );
+        }
+
+        if (request.getNickname() != null) {
+            String newNickname = request.getNickname();
+
+            // 기존 닉네임과 다를 때만 중복 검사
+            if (!user.getNickname().equals(newNickname)
+                    && userRepository.existsByNickname(newNickname)) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Nickname already exists"
+                );
+            }
+
+            user.changeNickname(newNickname);
+        }
+
+        if (hasImage) {
+            String previousImageUrl = user.getImage();
+
+            // 새로운 이미지를 먼저 업로드한다.
+            String newImageUrl =
+                    s3Service.upload(image, "profiles");
+
+            // DB에는 새 이미지 URL을 저장한다.
+            user.changeImage(newImageUrl);
+
+            // 트랜잭션이 성공한 뒤 기존 이미지를 삭제한다.
+            deleteImageAfterCommit(previousImageUrl);
         }
 
         return new UserResponseDto(user);
@@ -204,9 +238,29 @@ public class UserService {
             comment.delete();
         }
 
+        String profileImageUrl = user.getImage();
+
         user.delete();
 
+        deleteImageAfterCommit(profileImageUrl);
+
         return "Delete Success";
+    }
+
+    // DB 변경이 정상적으로 커밋된 뒤 기존 S3 이미지를 삭제
+    private void deleteImageAfterCommit(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        s3Service.delete(imageUrl);
+                    }
+                }
+        );
     }
 
 }

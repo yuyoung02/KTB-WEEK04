@@ -17,5 +17,4 @@ public class SignupRequestDto {
     @NotBlank(message = "Nickname is required")
     private String nickname;
 
-    private String image;
 }
