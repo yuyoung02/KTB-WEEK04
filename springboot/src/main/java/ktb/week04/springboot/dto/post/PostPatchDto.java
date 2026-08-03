@@ -9,6 +9,6 @@ public class PostPatchDto {
     private StadiumCode patchStadiumId;
     private String patchSubject;
     private String patchText;
-    private MultipartFile image;
+    private Boolean removeImage;
 
 }

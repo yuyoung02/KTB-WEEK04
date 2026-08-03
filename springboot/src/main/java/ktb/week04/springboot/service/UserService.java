@@ -146,9 +146,10 @@ public class UserService {
 
 
         boolean hasImage = image != null && !image.isEmpty();
+        boolean removeImage = Boolean.TRUE.equals(request.getRemoveImage());
 
         // 닉네임도 없고 새 이미지도 없으면 변경할 내용이 없다.
-        if (request.getNickname() == null && !hasImage) {
+        if (request.getNickname() == null && !hasImage && !removeImage) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Nothing changed"
@@ -181,6 +182,10 @@ public class UserService {
             user.changeImage(newImageUrl);
 
             // 트랜잭션이 성공한 뒤 기존 이미지를 삭제한다.
+            deleteImageAfterCommit(previousImageUrl);
+        } else if (removeImage && user.getImage() != null) {
+            String previousImageUrl = user.getImage();
+            user.changeImage(null);
             deleteImageAfterCommit(previousImageUrl);
         }
 
@@ -271,4 +276,3 @@ public class UserService {
     }
 
 }
-

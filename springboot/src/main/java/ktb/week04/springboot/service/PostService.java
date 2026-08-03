@@ -132,10 +132,17 @@ public class PostService {
             post.changeSubject(patchRequest.getPatchSubject());
         }
 
-        if (image != null && !image.isEmpty()) {
+        boolean hasImage = image != null && !image.isEmpty();
+        boolean removeImage = Boolean.TRUE.equals(patchRequest.getRemoveImage());
+
+        if (hasImage) {
             String previousImageUrl = post.getImage();
             String imageUrl = s3Service.upload(image, "posts");
             post.changeImage(imageUrl);
+            deleteImageAfterCommit(previousImageUrl);
+        } else if (removeImage && post.getImage() != null) {
+            String previousImageUrl = post.getImage();
+            post.changeImage(null);
             deleteImageAfterCommit(previousImageUrl);
         }
 
@@ -149,11 +156,10 @@ public class PostService {
             );
         }
 
-        boolean hasImage = image != null && !image.isEmpty();
-
         if (patchRequest.getPatchSubject() == null
                 && patchRequest.getPatchText() == null
                 && patchRequest.getPatchStadiumId() == null
+                && !removeImage
                 && !hasImage) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,

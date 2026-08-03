@@ -6,4 +6,5 @@ import lombok.Getter;
 @AllArgsConstructor
 public class UserPatchDto {
     private String nickname;
+    private Boolean removeImage;
 }
