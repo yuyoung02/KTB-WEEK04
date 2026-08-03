@@ -33,7 +33,7 @@ public class PostController {
     }
 
     //게시글 작성
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping()
     @ResponseStatus(HttpStatus.CREATED)
     public PostCreateResponseDto createPost(@RequestPart("post") @Valid PostRequestDto postRequest,
                                             @RequestPart(value = "image", required = false)
@@ -61,8 +61,7 @@ public class PostController {
     }
 
     //게시글 수정
-    @PatchMapping(value = "/{postId}",
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PatchMapping(value = "/{postId}")
     public PostResponseDto patchPost(@PathVariable Long postId,
                                      @RequestPart("post") @Valid PostPatchDto patchRequest,
                                      @RequestPart(value = "image", required = false)
