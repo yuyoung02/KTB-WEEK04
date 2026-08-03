@@ -77,7 +77,7 @@ public class PostService {
         return posts.stream().map(post -> {
                     Long likeCount = postLikeRepository.countByPost(post);
                     Long commentCount = commentRepository.countByPostAndDeletedAtIsNull(post);
-                    return new PostListResponseDto(post, likeCount, commentCount);
+                    return toPostListResponse(post, likeCount, commentCount);
                 })
                 .toList();
     }
@@ -97,7 +97,7 @@ public class PostService {
                 .map(post -> {
                     Long likeCount = postLikeRepository.countByPost(post);
                     Long commentCount = commentRepository.countByPostAndDeletedAtIsNull(post);
-                    return new PostListResponseDto(post, likeCount, commentCount);
+                    return toPostListResponse(post, likeCount, commentCount);
                 })
                 .toList();
     }
@@ -112,7 +112,7 @@ public class PostService {
         //좋아요수 따로
         Long likeCnt = postLikeRepository.countByPost(post);
 
-        return new PostResponseDto(post, likeCnt);
+        return toPostResponse(post, likeCnt);
     }
 
     //게시글 수정
@@ -163,7 +163,7 @@ public class PostService {
 
         Long likeCnt = postLikeRepository.countByPost(post);
 
-        return new PostResponseDto(post, likeCnt);
+        return toPostResponse(post, likeCnt);
 
     }
     //게시글 삭제
@@ -263,6 +263,28 @@ public class PostService {
                         s3Service.delete(imageUrl);
                     }
                 }
+        );
+    }
+
+    private PostListResponseDto toPostListResponse(
+            Post post,
+            Long likeCount,
+            Long commentCount
+    ) {
+        return new PostListResponseDto(
+                post,
+                likeCount,
+                commentCount,
+                s3Service.createPresignedGetUrl(post.getUser().getImage())
+        );
+    }
+
+    private PostResponseDto toPostResponse(Post post, Long likeCount) {
+        return new PostResponseDto(
+                post,
+                likeCount,
+                s3Service.createPresignedGetUrl(post.getImage()),
+                s3Service.createPresignedGetUrl(post.getUser().getImage())
         );
     }
 }

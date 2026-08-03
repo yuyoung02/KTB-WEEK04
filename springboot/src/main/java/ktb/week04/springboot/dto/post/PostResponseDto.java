@@ -17,18 +17,20 @@ public class PostResponseDto {
     private StadiumCode stadiumId;
     private String subject;
     private String image;
+    private String authorImage;
     private String text;
     private Long likeCount;
     private Long viewNum;
     private LocalDateTime date;
 
-    public PostResponseDto(Post post, Long likeCount){
+    public PostResponseDto(Post post, Long likeCount, String imageUrl, String authorImageUrl){
         this.userId = post.getUser().getUserId();
         this.nickname = post.getUser().getNickname();
         this.postId = post.getPostId();
         this.stadiumId = post.getStadiumCode();
         this.subject = post.getSubject();
-        this.image = post.getImage();
+        this.image = imageUrl;
+        this.authorImage = authorImageUrl;
         this.text = post.getText();
         this.likeCount = likeCount;
         this.viewNum = post.getViewNum();

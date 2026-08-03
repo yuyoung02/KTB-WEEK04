@@ -10,11 +10,11 @@ public class UserResponseDto {
     private String nickname;
     private String image;
 
-    public UserResponseDto(User user){
+    public UserResponseDto(User user, String imageUrl){
         this.email = user.getEmail();
         this.userId = user.getUserId();
         this.nickname = user.getNickname();
-        this.image = user.getImage();
+        this.image = imageUrl;
     }
 
 

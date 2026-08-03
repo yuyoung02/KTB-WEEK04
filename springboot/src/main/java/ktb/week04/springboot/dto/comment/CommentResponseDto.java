@@ -12,12 +12,12 @@ public class CommentResponseDto {
     private String nickname;
     private String image;
 
-    public CommentResponseDto(Comment comment){
+    public CommentResponseDto(Comment comment, String imageUrl){
 
         this.commentId = comment.getCommentId();
         this.commentText = comment.getCommentText();
         this.userId = comment.getUser().getUserId();
         this.nickname = comment.getUser().getNickname();
-        this.image =comment.getUser().getImage();
+        this.image = imageUrl;
     }
 }

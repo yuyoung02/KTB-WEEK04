@@ -120,7 +120,7 @@ public class UserService {
 
         User savedUser = userRepository.save(user);
 
-        return new UserResponseDto(savedUser);
+        return toUserResponse(savedUser);
     }
 
     //회원 정보 조회
@@ -134,7 +134,7 @@ public class UserService {
                                 "User not found"
                         )
                 );
-        return new UserResponseDto(user);
+        return toUserResponse(user);
     }
 
     //회원 정보 수정
@@ -184,7 +184,7 @@ public class UserService {
             deleteImageAfterCommit(previousImageUrl);
         }
 
-        return new UserResponseDto(user);
+        return toUserResponse(user);
     }
 
 
@@ -263,6 +263,12 @@ public class UserService {
         );
     }
 
-}
+    private UserResponseDto toUserResponse(User user) {
+        return new UserResponseDto(
+                user,
+                s3Service.createPresignedGetUrl(user.getImage())
+        );
+    }
 
+}
 

@@ -10,9 +10,13 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.Duration;
 import java.util.UUID;
 
 @Service
@@ -22,6 +26,7 @@ public class S3Service {
 
     // S3Config에서 Bean으로 등록한 S3Client를 주입받는다.
     private final S3Client s3Client;
+    private final S3Presigner s3Presigner;
 
     // application.yml에 작성한 버킷 이름
     @Value("${aws.s3.bucket}")
@@ -112,6 +117,30 @@ public class S3Service {
             // S3 삭제 실패로 게시글 수정·삭제 자체가 실패하지 않게 한다.
             log.warn("S3 이미지 삭제에 실패했습니다. url={}", fileUrl, exception);
         }
+    }
+
+    // 비공개 S3 이미지를 브라우저에서 볼 수 있는 임시 URL로 변환한다.
+    public String createPresignedGetUrl(String fileUrl) {
+        if (fileUrl == null || fileUrl.isBlank()) {
+            return null;
+        }
+
+        String path = URI.create(fileUrl).getPath();
+        String key = path.startsWith("/") ? path.substring(1) : path;
+
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .build();
+
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofHours(1))
+                .getObjectRequest(getObjectRequest)
+                .build();
+
+        return s3Presigner.presignGetObject(presignRequest)
+                .url()
+                .toString();
     }
 
      //업로드 가능한 파일인지 검사

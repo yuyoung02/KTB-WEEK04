@@ -21,10 +21,10 @@ public class PostListResponseDto {
     private Long viewNum;
     private LocalDateTime date;
 
-    public PostListResponseDto(Post post, Long likeCount, Long commentCount){
+    public PostListResponseDto(Post post, Long likeCount, Long commentCount, String authorImageUrl){
         this.userId = post.getUser().getUserId();
         this.userNickname = post.getUser().getNickname();
-        this.image = post.getUser().getImage();
+        this.image = authorImageUrl;
         this.postId = post.getPostId();
         this.stadiumId = post.getStadiumCode();
         this.subject = post.getSubject();

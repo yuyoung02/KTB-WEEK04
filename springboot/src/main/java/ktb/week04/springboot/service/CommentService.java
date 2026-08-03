@@ -25,13 +25,16 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final S3Service s3Service;
 
     public CommentService(CommentRepository commentRepository,
                           PostRepository postRepository,
-                          UserRepository userRepository) {
+                          UserRepository userRepository,
+                          S3Service s3Service) {
         this.commentRepository = commentRepository;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
+        this.s3Service = s3Service;
     }
 
     //댓글 달기
@@ -52,7 +55,7 @@ public class CommentService {
 
         Comment savedComment = commentRepository.save(comment);
 
-        return new CommentResponseDto(savedComment);
+        return toCommentResponse(savedComment);
     }
 
     //댓글 조회
@@ -62,7 +65,7 @@ public class CommentService {
 
         return commentRepository.findByPostAndDeletedAtIsNull(post)
                 .stream()
-                .map(CommentResponseDto::new)
+                .map(this::toCommentResponse)
                 .toList();
     }
 
@@ -95,7 +98,7 @@ public class CommentService {
 
         comment.updateCommentText(patchRequest.getCommentText());
 
-        return new CommentResponseDto(comment);
+        return toCommentResponse(comment);
     }
 
     //댓긋 삭제
@@ -144,5 +147,12 @@ public class CommentService {
                         HttpStatus.NOT_FOUND,
                         "Comment not found"
                 ));
+    }
+
+    private CommentResponseDto toCommentResponse(Comment comment) {
+        return new CommentResponseDto(
+                comment,
+                s3Service.createPresignedGetUrl(comment.getUser().getImage())
+        );
     }
 }
