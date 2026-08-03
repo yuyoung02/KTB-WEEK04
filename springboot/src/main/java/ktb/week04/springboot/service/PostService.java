@@ -3,6 +3,8 @@ package ktb.week04.springboot.service;
 import ktb.week04.springboot.entity.Enum.StadiumCode;
 import ktb.week04.springboot.entity.PostLike;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import jakarta.validation.Valid;
 import ktb.week04.springboot.dto.post.*;
 import ktb.week04.springboot.entity.Comment;
@@ -15,6 +17,7 @@ import ktb.week04.springboot.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -27,27 +30,36 @@ public class PostService {
     private final UserRepository userRepository;
     private final PostLikeRepository postLikeRepository;
     private final CommentRepository commentRepository;
+    private final S3Service s3Service;
 
     public PostService(PostRepository postRepository,
                        UserRepository userRepository,
                        PostLikeRepository postLikeRepository,
-                       CommentRepository commentRepository) {
+                       CommentRepository commentRepository,
+                       S3Service s3Service) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.postLikeRepository = postLikeRepository;
         this.commentRepository = commentRepository;
+        this.s3Service = s3Service;
     }
 
     //게시글 작성
-    public PostCreateResponseDto createPost(PostRequestDto postRequest, Long currentUserId){
+    public PostCreateResponseDto createPost(PostRequestDto postRequest, MultipartFile image, Long currentUserId){
 
         User user = findUserById(currentUserId);
+
+        String imageUrl = null;
+
+        if (image != null && !image.isEmpty()) {
+            imageUrl = s3Service.upload(image, "posts");
+        }
 
         Post post = new Post(
                 user,
                 postRequest.getStadiumId(),
                 postRequest.getSubject(),
-                postRequest.getImage(),
+                imageUrl,
                 postRequest.getText()
         );
 
@@ -104,7 +116,7 @@ public class PostService {
     }
 
     //게시글 수정
-    public PostResponseDto patchPost(Long postId, PostPatchDto patchRequest, Long currentUserId){
+    public PostResponseDto patchPost(Long postId, PostPatchDto patchRequest, Long currentUserId, MultipartFile image){
 
         Post post = findPostById(postId);
 
@@ -120,8 +132,11 @@ public class PostService {
             post.changeSubject(patchRequest.getPatchSubject());
         }
 
-        if(patchRequest.getPatchImage()!=null){
-            post.changeImage(patchRequest.getPatchImage());
+        if (image != null && !image.isEmpty()) {
+            String previousImageUrl = post.getImage();
+            String imageUrl = s3Service.upload(image, "posts");
+            post.changeImage(imageUrl);
+            deleteImageAfterCommit(previousImageUrl);
         }
 
         if(patchRequest.getPatchText() != null){
@@ -134,8 +149,12 @@ public class PostService {
             );
         }
 
-        if(patchRequest.getPatchSubject() == null && patchRequest.getPatchText() == null && patchRequest.getPatchImage() == null &&
-                patchRequest.getPatchStadiumId() == null){
+        boolean hasImage = image != null && !image.isEmpty();
+
+        if (patchRequest.getPatchSubject() == null
+                && patchRequest.getPatchText() == null
+                && patchRequest.getPatchStadiumId() == null
+                && !hasImage) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Nothing changed"
@@ -159,7 +178,9 @@ public class PostService {
             );
         }
 
+        String imageUrl = post.getImage();
         post.delete();
+        deleteImageAfterCommit(imageUrl);
 
         return "Delete Success";
     }
@@ -227,5 +248,21 @@ public class PostService {
                         HttpStatus.NOT_FOUND,
                         "User not found"
                 ));
+    }
+
+    // DB 변경이 확정된 뒤 기존 S3 이미지를 삭제한다.
+    private void deleteImageAfterCommit(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        s3Service.delete(imageUrl);
+                    }
+                }
+        );
     }
 }

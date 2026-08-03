@@ -12,9 +12,11 @@ import ktb.week04.springboot.service.CommentService;
 import ktb.week04.springboot.service.PostService;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.security.core.Authentication;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -31,12 +33,15 @@ public class PostController {
     }
 
     //게시글 작성
-    @PostMapping()
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public PostCreateResponseDto createPost(@Valid @RequestBody PostRequestDto postRequest, Authentication authentication){
+    public PostCreateResponseDto createPost(@RequestPart("post") @Valid PostRequestDto postRequest,
+                                            @RequestPart(value = "image", required = false)
+                                            MultipartFile image,
+                                            Authentication authentication){
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
-        return postService.createPost(postRequest, userDetails.getUserId());
+        return postService.createPost(postRequest, image, userDetails.getUserId());
     }
 
     //게시글 목록 조회 -> 구단 필터링 추가
@@ -56,12 +61,17 @@ public class PostController {
     }
 
     //게시글 수정
-    @PatchMapping("/{postId}")
-    public PostResponseDto patchPost(@PathVariable Long postId, @Valid @RequestBody PostPatchDto patchRequest, Authentication authentication){
+    @PatchMapping(value = "/{postId}",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public PostResponseDto patchPost(@PathVariable Long postId,
+                                     @RequestPart("post") @Valid PostPatchDto patchRequest,
+                                     @RequestPart(value = "image", required = false)
+                                     MultipartFile image,
+                                     Authentication authentication){
 
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
-        return postService.patchPost(postId, patchRequest, userDetails.getUserId());
+        return postService.patchPost(postId, patchRequest, userDetails.getUserId(), image);
     }
     //게시글 삭제
     @DeleteMapping("/{postId}")
@@ -136,5 +146,4 @@ public class PostController {
         return commentService.deleteComment(postId, commentId, userDetails.getUserId());
     }
 }
-
 

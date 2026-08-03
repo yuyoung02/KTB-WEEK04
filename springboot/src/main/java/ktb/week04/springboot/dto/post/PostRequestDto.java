@@ -17,6 +17,4 @@ public class PostRequestDto {
     @NotBlank(message = "Content text is required")
     private String text;
 
-    private String image;
-
 }
