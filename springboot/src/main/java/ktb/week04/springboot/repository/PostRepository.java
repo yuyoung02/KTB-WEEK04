@@ -10,12 +10,12 @@ import java.util.List;
 public interface PostRepository extends JpaRepository<Post, Long> {
 
     // 삭제되지 않은 게시글만 조회..
-    List<Post> findByDeletedAtIsNull();
+    List<Post> findByDeletedAtIsNullOrderByCreatedAtDescPostIdDesc();
 
     // 삭제된 유저의 게시글 지우기 위해
     List<Post> findByUserAndDeletedAtIsNull(User user);
 
-    List<Post> findByStadiumCodeAndDeletedAtIsNullOrderByCreatedAtDesc(
+    List<Post> findByStadiumCodeAndDeletedAtIsNullOrderByCreatedAtDescPostIdDesc(
             StadiumCode stadiumCode
     );
 }

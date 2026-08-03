@@ -72,7 +72,9 @@ public class PostService {
     //게시글 목록 조회
     @Transactional(readOnly = true)
     public List<PostListResponseDto> getPost() {
-        List<Post> posts = postRepository.findByDeletedAtIsNull();
+        List<Post> posts =
+                postRepository
+                        .findByDeletedAtIsNullOrderByCreatedAtDescPostIdDesc();
 
         return posts.stream().map(post -> {
                     Long likeCount = postLikeRepository.countByPost(post);
@@ -89,7 +91,7 @@ public class PostService {
     ) {
         List<Post> posts =
                 postRepository
-                        .findByStadiumCodeAndDeletedAtIsNullOrderByCreatedAtDesc(
+                        .findByStadiumCodeAndDeletedAtIsNullOrderByCreatedAtDescPostIdDesc(
                                 stadiumCode
                         );
 
