@@ -2,6 +2,11 @@ spring:
   profiles:
     default: local
 
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 21MB
+
   jackson:
     time-zone: Asia/Seoul
 
