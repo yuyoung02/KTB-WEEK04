@@ -9,7 +9,7 @@ import java.util.TimeZone;
 public class SpringbootApplication {
 
 	public static void main(String[] args) {
-		TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+		TimeZone.setDefault(TimeZone.getTimeZone("Asia/Seoul"));
 		SpringApplication.run(SpringbootApplication.class, args);
 	}
 
