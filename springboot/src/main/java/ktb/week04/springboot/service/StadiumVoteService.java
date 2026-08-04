@@ -71,6 +71,14 @@ public class StadiumVoteService {
                 .map(StadiumVoteResponseDto::new);
     }
 
+    public void cancelMyVote(Long currentUserId) {
+        User user = findUserById(currentUserId);
+
+        stadiumVoteRepository
+                .findByUserAndVoteMonth(user, getCurrentVoteMonth())
+                .ifPresent(stadiumVoteRepository::delete);
+    }
+
     @Transactional(readOnly = true)
     public List<StadiumVoteRankingDto> getRankings() {
         List<StadiumVote> votes = stadiumVoteRepository
