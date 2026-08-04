@@ -7,6 +7,7 @@ import ktb.week04.springboot.dto.vote.StadiumVoteResponseDto;
 import ktb.week04.springboot.security.CustomUserDetails;
 import ktb.week04.springboot.service.StadiumVoteService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,15 +35,15 @@ public class StadiumVoteController {
     }
 
     @GetMapping("/me")
-    public StadiumVoteResponseDto getMyVote(
+    public ResponseEntity<StadiumVoteResponseDto> getMyVote(
             Authentication authentication
     ) {
         CustomUserDetails userDetails =
                 (CustomUserDetails) authentication.getPrincipal();
 
-        return stadiumVoteService.getMyVote(
-                userDetails.getUserId()
-        );
+        return stadiumVoteService.getMyVote(userDetails.getUserId())
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     @GetMapping("/rankings")

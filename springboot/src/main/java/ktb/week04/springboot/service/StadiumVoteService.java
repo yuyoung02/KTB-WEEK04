@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -62,17 +63,12 @@ public class StadiumVoteService {
     }
 
     @Transactional(readOnly = true)
-    public StadiumVoteResponseDto getMyVote(Long currentUserId) {
+    public Optional<StadiumVoteResponseDto> getMyVote(Long currentUserId) {
         User user = findUserById(currentUserId);
 
-        StadiumVote vote = stadiumVoteRepository
+        return stadiumVoteRepository
                 .findByUserAndVoteMonth(user, getCurrentVoteMonth())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Vote not found"
-                ));
-
-        return new StadiumVoteResponseDto(vote);
+                .map(StadiumVoteResponseDto::new);
     }
 
     @Transactional(readOnly = true)
