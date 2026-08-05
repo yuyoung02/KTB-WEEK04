@@ -63,5 +63,17 @@ jobs:
         run: |
           cd /home/ubuntu/ballpark
           docker compose ps backend
-          curl --fail --silent http://localhost/api/posts > /dev/null
-          echo "Backend deployment successful"
+      
+          for i in {1..10}; do
+            if curl --fail --silent http://localhost/api/posts > /dev/null; then
+              echo "Backend deployment successful"
+              exit 0
+            fi
+      
+            echo "Backend is starting... ($i/10)"
+            sleep 5
+          done
+      
+          echo "Backend health check failed"
+          docker compose logs --tail=100 backend
+          exit 1
