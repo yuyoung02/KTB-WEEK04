@@ -1,0 +1,39 @@
+name: Backend CI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: [self-hosted, Linux, ARM64]
+
+    defaults:
+      run:
+        working-directory: springboot
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v5
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+          cache-dependency-path: |
+            springboot/**/*.gradle*
+            springboot/**/gradle-wrapper.properties
+
+      - name: Grant execute permission
+        run: chmod +x gradlew
+
+      - name: Run tests
+        env:
+          JWT_SECRET: test-jwt-secret-for-github-actions-ci
+        run: ./gradlew clean test --no-daemon
+
+      - name: Build backend
+        env:
+          JWT_SECRET: test-jwt-secret-for-github-actions-ci
+        run: ./gradlew bootJar --no-daemon
