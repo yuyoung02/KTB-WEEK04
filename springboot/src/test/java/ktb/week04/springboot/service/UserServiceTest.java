@@ -48,6 +48,9 @@ class UserServiceTest {
     @Mock
     private JwtTokenProvider jwtTokenProvider;
 
+    @Mock
+    private S3Service s3Service;
+
     private User testUser;
 
     @BeforeEach
@@ -123,8 +126,7 @@ class UserServiceTest {
         SignupRequestDto request = new SignupRequestDto(
                 "new@test.com",
                 "test!1234",
-                "새닉네임",
-                null
+                "새닉네임"
         );
 
         when(userRepository.existsByEmail("new@test.com")).thenReturn(false);
@@ -136,7 +138,7 @@ class UserServiceTest {
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
-        UserResponseDto result = userService.signup(request);
+        UserResponseDto result = userService.signup(request, null);
 
         // then
         assertEquals("new@test.com", result.getEmail());
@@ -153,14 +155,13 @@ class UserServiceTest {
         SignupRequestDto request = new SignupRequestDto(
                 "test@test.com",
                 "test!1234",
-                "닉네임",
-                null
+                "닉네임"
         );
 
         when(userRepository.existsByEmail("test@test.com")).thenReturn(true);
 
         // when
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.signup(request)
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.signup(request, null)
         );
 
         // then
@@ -174,8 +175,7 @@ class UserServiceTest {
         SignupRequestDto request = new SignupRequestDto(
                 "new@test.com",
                 "test!1234",
-                "중복닉네임",
-                null
+                "중복닉네임"
         );
 
         when(userRepository.existsByEmail("new@test.com")).thenReturn(false);
@@ -183,7 +183,7 @@ class UserServiceTest {
         when(userRepository.existsByNickname("중복닉네임")).thenReturn(true);
 
         // when
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.signup(request)
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.signup(request, null)
         );
 
         // then
@@ -228,7 +228,7 @@ class UserServiceTest {
         when(userRepository.existsByNickname("변경닉네임")).thenReturn(false);
 
         // when
-        UserResponseDto result = userService.patchUser(request, 1L);
+        UserResponseDto result = userService.patchUser(request, null, 1L);
 
         // then
         assertEquals("변경닉네임", result.getNickname());
@@ -243,7 +243,7 @@ class UserServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
 
         // when
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.patchUser(request, 1L)
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.patchUser(request, null, 1L)
         );
 
         // then
@@ -261,7 +261,7 @@ class UserServiceTest {
         when(userRepository.existsByNickname("중복닉네임")).thenReturn(true);
 
         // when
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.patchUser(request, 1L));
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> userService.patchUser(request, null, 1L));
 
         // then
         assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
