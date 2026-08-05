@@ -1,6 +1,10 @@
-name: Backend CI
+name: Backend CI/CD
 
 on:
+  push:
+    branches:
+      - main
+
   workflow_dispatch:
 
 jobs:
@@ -37,3 +41,27 @@ jobs:
         env:
           JWT_SECRET: test-jwt-secret-for-github-actions-ci
         run: ./gradlew bootJar --no-daemon
+
+  deploy:
+    needs: build
+    runs-on: [self-hosted, Linux, ARM64]
+
+    steps:
+      - name: Update backend source
+        run: |
+          cd /home/ubuntu/ballpark/KTB-WEEK04
+          git checkout main
+          git pull origin main
+
+      - name: Rebuild backend container
+        run: |
+          cd /home/ubuntu/ballpark
+          docker compose build backend
+          docker compose up -d --no-deps backend
+
+      - name: Check backend container
+        run: |
+          cd /home/ubuntu/ballpark
+          docker compose ps backend
+          curl --fail --silent http://localhost/api/posts > /dev/null
+          echo "Backend deployment successful"
