@@ -104,6 +104,26 @@ public class PostService {
                 .toList();
     }
 
+    // 구장과 검색어 조건으로 게시글 목록 조회
+    @Transactional(readOnly = true)
+    public List<PostListResponseDto> searchPosts(
+            StadiumCode stadiumCode,
+            String keyword
+    ) {
+        String normalizedKeyword = keyword == null || keyword.isBlank()
+                ? null
+                : keyword.trim();
+
+        return postRepository.searchPosts(stadiumCode, normalizedKeyword)
+                .stream()
+                .map(post -> {
+                    Long likeCount = postLikeRepository.countByPost(post);
+                    Long commentCount = commentRepository.countByPostAndDeletedAtIsNull(post);
+                    return toPostListResponse(post, likeCount, commentCount);
+                })
+                .toList();
+    }
+
     //게시글 상세 조회
     public PostResponseDto getPost(Long postId){
         Post post = findPostById(postId);

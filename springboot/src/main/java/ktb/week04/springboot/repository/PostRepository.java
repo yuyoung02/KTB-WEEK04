@@ -4,6 +4,8 @@ import ktb.week04.springboot.entity.Enum.StadiumCode;
 import ktb.week04.springboot.entity.Post;
 import ktb.week04.springboot.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -17,5 +19,23 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     List<Post> findByStadiumCodeAndDeletedAtIsNullOrderByCreatedAtDescPostIdDesc(
             StadiumCode stadiumCode
+    );
+
+    // 구장 필터와 제목·본문 검색을 함께 처리
+    @Query("""
+            SELECT p
+            FROM Post p
+            WHERE p.deletedAt IS NULL
+              AND (:stadiumId IS NULL OR p.stadiumCode = :stadiumId)
+              AND (
+                  :keyword IS NULL
+                  OR LOWER(p.subject) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                  OR LOWER(p.text) LIKE LOWER(CONCAT('%', :keyword, '%'))
+              )
+            ORDER BY p.createdAt DESC, p.postId DESC
+            """)
+    List<Post> searchPosts(
+            @Param("stadiumId") StadiumCode stadiumId,
+            @Param("keyword") String keyword
     );
 }

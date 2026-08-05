@@ -46,7 +46,14 @@ public class PostController {
 
     //게시글 목록 조회 -> 구단 필터링 추가
     @GetMapping()
-    public List<PostListResponseDto> getPost(@RequestParam(required = false) StadiumCode stadiumId){
+    public List<PostListResponseDto> getPost(
+            @RequestParam(required = false) StadiumCode stadiumId,
+            @RequestParam(required = false) String keyword
+    ){
+        if (keyword != null && !keyword.isBlank()) {
+            return postService.searchPosts(stadiumId, keyword);
+        }
+
         if (stadiumId == null) {
             return postService.getPost();
         }
@@ -145,4 +152,3 @@ public class PostController {
         return commentService.deleteComment(postId, commentId, userDetails.getUserId());
     }
 }
-
