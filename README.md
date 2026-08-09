@@ -190,7 +190,15 @@ KTB-WEEK04/
 
 ## 서비스 시연 영상
 
-> TODO: 서비스 시연 영상 링크 또는 GIF를 추가할 예정입니다.
+<a href="https://youtu.be/fr_ECn_Xj0U">
+  <img
+    src="https://img.youtube.com/vi/fr_ECn_Xj0U/maxresdefault.jpg"
+    width="700"
+    alt="구장 이야기 서비스 시연 영상"
+  />
+</a>
+
+[▶️ 구장 이야기 서비스 시연 영상 보기](https://youtu.be/fr_ECn_Xj0U)
 
 <br />
 
