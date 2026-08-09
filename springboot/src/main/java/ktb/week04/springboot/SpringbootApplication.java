@@ -2,9 +2,12 @@ package ktb.week04.springboot;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.resilience.annotation.EnableResilientMethods;
 
 import java.util.TimeZone;
 
+
+@EnableResilientMethods
 @SpringBootApplication
 public class SpringbootApplication {
 

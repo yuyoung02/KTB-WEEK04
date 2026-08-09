@@ -88,9 +88,9 @@ public class Post {
         this.subject = changedSubject;
     }
 
-    public void increaseView() {
-        this.viewNum++;
-    }
+    // public void increaseView() {
+//        this.viewNum++;
+//    }
 
 
 }

@@ -16,4 +16,7 @@ public interface StadiumVoteRepository
     );
 
     List<StadiumVote> findByVoteMonth(String voteMonth);
+
+    long countByUserAndVoteMonth(User user, String voteMonth);
+
 }

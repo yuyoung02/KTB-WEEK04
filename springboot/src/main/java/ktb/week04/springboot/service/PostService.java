@@ -2,10 +2,12 @@ package ktb.week04.springboot.service;
 
 import ktb.week04.springboot.entity.Enum.StadiumCode;
 import ktb.week04.springboot.entity.PostLike;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import jakarta.validation.Valid;
+import org.springframework.resilience.annotation.Retryable;
 import ktb.week04.springboot.dto.post.*;
 import ktb.week04.springboot.entity.Comment;
 import ktb.week04.springboot.entity.Post;
@@ -126,10 +128,21 @@ public class PostService {
 
     //게시글 상세 조회
     public PostResponseDto getPost(Long postId){
+
+        //원자적 update -> 조회수 +1
+        int updatedCount = postRepository.increaseViewCount(postId);
+
+        if (updatedCount == 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Post not found"
+            );
+        }
+
         Post post = findPostById(postId);
 
         // 상세 조회하면 -> 조회수 ++
-        post.increaseView();
+        //post.increaseView();
 
         //좋아요수 따로
         Long likeCnt = postLikeRepository.countByPost(post);

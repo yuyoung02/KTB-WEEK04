@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+  sql:
+    init:
+      mode: never
+
+jwt:
+  secret: test-jwt-secret-key-over-32-bytes-for-tests
+  expiration: 3600000

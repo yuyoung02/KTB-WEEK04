@@ -23,7 +23,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 
-	implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.12.0'
+	implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:2.0.1'
 
 	// AWS S3
 	implementation platform('software.amazon.awssdk:bom:2.47.0')
@@ -46,6 +46,13 @@ dependencies {
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// JUnit 연동 + MySQL 컨테이너 (테스트용)
+	// Testcontainers
+	testImplementation platform('org.testcontainers:testcontainers-bom:1.21.3')
+	testImplementation 'org.testcontainers:junit-jupiter'
+	testImplementation 'org.testcontainers:mysql'
+
 }
 
 tasks.named('test') {

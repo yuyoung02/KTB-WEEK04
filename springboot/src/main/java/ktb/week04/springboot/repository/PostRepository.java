@@ -1,13 +1,17 @@
 package ktb.week04.springboot.repository;
 
+import jakarta.persistence.LockModeType;
 import ktb.week04.springboot.entity.Enum.StadiumCode;
 import ktb.week04.springboot.entity.Post;
 import ktb.week04.springboot.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
@@ -38,4 +42,17 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("stadiumId") StadiumCode stadiumId,
             @Param("keyword") String keyword
     );
+
+    // 원자적 업데이트
+    @Modifying
+    @Query("""
+    UPDATE Post p
+    SET p.viewNum = p.viewNum + 1
+    WHERE p.postId = :postId
+      AND p.deletedAt IS NULL
+    """)
+    int increaseViewCount(@Param("postId") Long postId);
+
+
+
 }

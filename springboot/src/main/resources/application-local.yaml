@@ -14,7 +14,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: true
@@ -24,3 +24,17 @@ spring:
   sql:
     init:
       mode: always
+
+# 로컬 실행 전용 JWT 키 (운영 환경은 JWT_SECRET 사용)
+jwt:
+  secret: local-development-jwt-secret-key-over-32-bytes
+
+# 로컬에서 실행된 SQL과 바인딩 값을 콘솔에 출력
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: true
+      multiline: false
+      logging: slf4j
+      log-format: "SQL %(executionTime)ms | %(sqlSingleLine)"
+      exclude-categories: info,debug,result,resultset,batch,commit,rollback
