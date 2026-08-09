@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import ktb.week04.springboot.dto.user.*;
 import ktb.week04.springboot.entity.User;
+import ktb.week04.springboot.exception.InvalidPasswordException;
 import ktb.week04.springboot.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -200,10 +201,7 @@ public class UserService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         if (!passwordEncoder.matches(passwordRequest.getOriginalPwd(), user.getPassword())){
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Password is wrong"
-            );
+            throw new InvalidPasswordException();
         }
 
         if(!passwordRequest.getNewPwd().equals(passwordRequest.getOneMoreNewPwd())){
@@ -227,10 +225,7 @@ public class UserService {
 
 
         if(!passwordEncoder.matches(deleteRequest.getPassword(), user.getPassword())){
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Password is Wrong"
-            );
+            throw new InvalidPasswordException();
         }
 
         List<Post> posts = postRepository.findByUserAndDeletedAtIsNull(user);
